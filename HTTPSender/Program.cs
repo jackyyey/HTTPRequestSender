@@ -30,7 +30,7 @@ namespace HTTPSender
                 using StringContent queryBody = new(
                     JsonSerializer.Serialize(new
                     {
-                        username = "MrPipo23",
+                        username = "MrPipo" + new Random().Next(1,9999),
                         password = "PIPO"
                     }),
                     Encoding.UTF8,
@@ -38,7 +38,6 @@ namespace HTTPSender
                     );
 
                 using HttpResponseMessage response = await httpClient.PostAsync("api/id/signup", queryBody);
-                response.EnsureSuccessStatusCode();
                 if (response.IsSuccessStatusCode)
                 {
                     IEnumerable<string> cookies = response.Headers.SingleOrDefault(header => header.Key == "Set-Cookie").Value;
@@ -46,11 +45,12 @@ namespace HTTPSender
                     using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
                     using (var client = new HttpClient(handler) { BaseAddress = httpClient.BaseAddress })
                     {
-                        cookieContainer.Add(httpClient.BaseAddress, new Cookie("JSESSIONID",cookies.First()));
-                        var result = await client.GetAsync("/api/progres/"+id+"/100");
-
+                        var cookie = cookies.First();
+                        cookieContainer.Add(httpClient.BaseAddress, new Cookie("JSESSIONID", cookies.First()));
+                        var result = await client.GetAsync("/api/progres/" + id + "/100");
+                        var help = new List<int>();
                     }
-                    
+                }
                 else
                 {
                     Console.Clear();
