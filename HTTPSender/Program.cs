@@ -22,10 +22,16 @@ namespace HTTPSender
 
         static async Task start()
         {
+
+            // Donne l'url du serveur au programme
             Console.WriteLine("Enter Domain Name");
             string domaine = Console.ReadLine();
+
+            // Donne le nom de la tâche au serveur
             Console.WriteLine("Enter Task Name");
             string taskname = Console.ReadLine();
+
+            // Verifier si l'url est un nom de domain standard
             Console.WriteLine("Is domain name a standard domain name? (y/n)");
             if (Console.ReadLine().ToLower() == "y" ? Regex.Match(domaine, "[A-Za-z0-9]+\\.[A-Za-z0-9]+").Success : true) //Regex.Match(domaine, "[A-Za-z0-9]+\\.[A-Za-z0-9]+").Success
             {
@@ -42,7 +48,7 @@ namespace HTTPSender
                     );
                 Console.WriteLine("Creating user...");
 
-                // Créer un compte
+                // Crée un compte
                 using HttpResponseMessage response = await httpClient.PostAsync("api/id/signup", queryBody); 
 
                 if (response.IsSuccessStatusCode) // Vérifie que le serveur renvoie un status 200
@@ -51,15 +57,18 @@ namespace HTTPSender
                     Console.WriteLine("Account creation Success");
                     Thread.Sleep(600);
                     Console.Clear();
+                    
+                    // Indique le nombre d'essaie pour trouver le id de la tâche
                     Console.WriteLine("How many tries?");
                     string tries = Console.ReadLine();
                     int nbTries = 0;
+                    // recommence tout si le nb d'essaie n'est pas un nombre
                     try { nbTries = int.Parse(tries); }catch { Console.WriteLine("Input is not a number"); Console.WriteLine("resetting..."); await start(); }
                     
                     Console.WriteLine("Finding task id...");
 
-                    int? id = await getTaskIdFromName(nbTries,0, taskname, httpClient);
-                    if (id == null)
+                    int? id = await getTaskIdFromName(nbTries,0, taskname, httpClient); // le code qui trouve l'id
+                    if (id == null) // traitement des retours null
                     {
                         Console.WriteLine("Task does not exist");
                         Thread.Sleep(200);
@@ -67,6 +76,7 @@ namespace HTTPSender
                         string retry = Console.ReadLine();
                         if (retry.ToLower() == "y")
                         {
+                            Console.Clear();
                             await start();
                         }
                         else
@@ -78,7 +88,7 @@ namespace HTTPSender
                     }
                     Console.WriteLine("Insert new task value:"); // Nouvelle pourcentage tâche
                     int progress = 0;
-                    try
+                    try // recommence tout si le nb d'essaie n'est pas un nombre
                     {
                         progress = int.Parse(Console.ReadLine());
                     }
