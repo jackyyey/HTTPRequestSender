@@ -39,14 +39,20 @@ namespace HTTPSender
                     Encoding.UTF8,
                     "application/json"
                     );
+                Console.WriteLine("Sending request...");
 
-                using HttpResponseMessage response = await httpClient.PostAsync("api/id/signup", queryBody);
-                if (response.IsSuccessStatusCode)
+                // Créer un compte
+                using HttpResponseMessage response = await httpClient.PostAsync("api/id/signup", queryBody); 
+
+                if (response.IsSuccessStatusCode) // Vérifie que le serveur renvoie un status 200
                 {
-                    Console.WriteLine("Insert new task value:");
+                    Console.Clear();
+                    Console.WriteLine("Success");
+                    Console.WriteLine("Insert new task value:"); // Nouvelle pourcentage tâche
+                    int progress = 0;
                     try
                     {
-                        int progress = int.Parse(Console.ReadLine());
+                        progress = int.Parse(Console.ReadLine());
                     }
                     catch
                     {
@@ -60,11 +66,26 @@ namespace HTTPSender
                     using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
                     using (var client = new HttpClient(handler) { BaseAddress = httpClient.BaseAddress })
                     {
+                        // Get JSESSIONID
                         var cookie = cookies.First();
-                        cookieContainer.Add(httpClient.BaseAddress, new Cookie("JSESSIONID", cookies.Where(s=>s.Name == "JSESSIONID").First().Value));
-                        var result = await client.GetAsync("/api/progress/" + id + "/100");
+                        cookieContainer.Add(httpClient.BaseAddress, new Cookie("JSESSIONID", cookies.Where(s=>s.Name == "JSESSIONID").First().Value)); // idk if i need to do this but put cookie in requête
+                        
+                        // Modifie pourcentage tâche
+                        var result = await client.GetAsync("/api/progress/" + id + "/" + progress);
                         Console.WriteLine("Success");
-                        System.Environment.Exit(0);
+                        Thread.Sleep(3000);
+                        Console.WriteLine("Recommencer? (Y/n)");
+                        string retry = Console.ReadLine();
+                        if (retry.ToLower() == "y")
+                        {
+                            await start();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Shutting Down");
+                            Thread.Sleep(5000);
+                            System.Environment.Exit(0);
+                        }
                     }
                 }
                 else
