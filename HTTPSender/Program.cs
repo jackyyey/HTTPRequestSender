@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,8 +24,8 @@ namespace HTTPSender
         {
             Console.WriteLine("Enter Domain Name");
             string domaine = Console.ReadLine();
-            Console.WriteLine("Enter Task Id");
-            string id = Console.ReadLine();
+            Console.WriteLine("Enter Task Name");
+            string taskname = Console.ReadLine();
             Console.WriteLine("Is domain name a standard domain name? (y/n)");
             if (Console.ReadLine().ToLower() == "y" ? Regex.Match(domaine, "[A-Za-z0-9]+\\.[A-Za-z0-9]+").Success : true) //Regex.Match(domaine, "[A-Za-z0-9]+\\.[A-Za-z0-9]+").Success
             {
@@ -39,7 +40,7 @@ namespace HTTPSender
                     Encoding.UTF8,
                     "application/json"
                     );
-                Console.WriteLine("Sending request...");
+                Console.WriteLine("Creating user...");
 
                 // Créer un compte
                 using HttpResponseMessage response = await httpClient.PostAsync("api/id/signup", queryBody); 
@@ -47,7 +48,34 @@ namespace HTTPSender
                 if (response.IsSuccessStatusCode) // Vérifie que le serveur renvoie un status 200
                 {
                     Console.Clear();
-                    Console.WriteLine("Success");
+                    Console.WriteLine("Account creation Success");
+                    Thread.Sleep(600);
+                    Console.Clear();
+                    Console.WriteLine("How many tries?");
+                    string tries = Console.ReadLine();
+                    int nbTries = 0;
+                    try { nbTries = int.Parse(tries); }catch { Console.WriteLine("Input is not a number"); Console.WriteLine("resetting..."); await start(); }
+                    
+                    Console.WriteLine("Finding task id...");
+
+                    int? id = await getTaskIdFromName(nbTries,0, taskname, httpClient);
+                    if (id == null)
+                    {
+                        Console.WriteLine("Task does not exist");
+                        Thread.Sleep(200);
+                        Console.WriteLine("Recommencer? (Y/n)");
+                        string retry = Console.ReadLine();
+                        if (retry.ToLower() == "y")
+                        {
+                            await start();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Shutting Down");
+                            Thread.Sleep(5000);
+                            System.Environment.Exit(0);
+                        }
+                    }
                     Console.WriteLine("Insert new task value:"); // Nouvelle pourcentage tâche
                     int progress = 0;
                     try
@@ -72,6 +100,7 @@ namespace HTTPSender
                         
                         // Modifie pourcentage tâche
                         var result = await client.GetAsync("/api/progress/" + id + "/" + progress);
+                        Console.Clear();
                         Console.WriteLine("Success");
                         Thread.Sleep(3000);
                         Console.WriteLine("Recommencer? (Y/n)");
@@ -101,6 +130,44 @@ namespace HTTPSender
                 Console.WriteLine("Input is not a domain");
                 await start();
                 
+            }
+        }
+        static async Task<int?> getTaskIdFromName(int noTries,int startingPoint, string taskname,HttpClient httpClient)
+        {
+            if (startingPoint < noTries)
+            {
+                Console.WriteLine("finding tasks with name: " + taskname);
+                HttpClientHandler httpClientHander = new HttpClientHandler();
+                using HttpResponseMessage response = await httpClient.GetAsync("api/detail/"+startingPoint);
+                if (response.IsSuccessStatusCode)
+                {
+                    string id = await response.Content.ReadAsStringAsync();
+                    JsonDocument jsonObject = JsonDocument.Parse(id);
+                    if (jsonObject.RootElement.GetProperty("name").ToString().Contains(taskname))
+                    {
+                        string realid = jsonObject.RootElement.GetProperty("id").ToString();
+                        Console.WriteLine("Found task id: " + realid);
+                        return int.Parse(realid);
+                    }
+                    else
+                    {
+                        Console.WriteLine("wrong task... retrying");
+                        Thread.Sleep(30);
+                        Console.Clear();
+                        return await getTaskIdFromName(noTries, startingPoint + 1, taskname, httpClient);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("wrong task... retrying");
+                    Thread.Sleep(30);
+                    Console.Clear();
+                    return await getTaskIdFromName(noTries,startingPoint+1, taskname, httpClient);
+                }
+            }
+            else
+            {
+                return null;
             }
         }
 
